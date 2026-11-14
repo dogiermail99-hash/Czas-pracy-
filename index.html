@@ -1,0 +1,159 @@
+<!DOCTYPE html>
+<html lang="pl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Czas pracy</title>
+<style>
+:root{--bg:#f6f5f1;--card:#fff;--tx:#1d2320;--mu:#6b746f;--ac:#2f7d5b;--ac2:#e3f1ea;--bd:#e2e0d8;--dg:#c0453a;--ed:#fff3d6;--edb:#e0a93b;color-scheme:light;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg:#141816;--card:#1e2421;--tx:#ecefed;--mu:#97a19b;--ac:#4fb88a;--ac2:#22352c;--bd:#2f3833;--dg:#e5766b;--ed:#3a2f17;--edb:#d9a23a;color-scheme:dark}}
+:root[data-theme="dark"]{--bg:#141816;--card:#1e2421;--tx:#ecefed;--mu:#97a19b;--ac:#4fb88a;--ac2:#22352c;--bd:#2f3833;--dg:#e5766b;--ed:#3a2f17;--edb:#d9a23a;color-scheme:dark}
+*{box-sizing:border-box}html{scroll-padding-top:env(safe-area-inset-top,0px)}
+body{margin:0;background:var(--bg);color:var(--tx);font:16px/1.4 system-ui,-apple-system,"Segoe UI",sans-serif}
+main{max-width:560px;margin:0 auto;padding:16px}
+h1{font-size:22px;margin:4px 0 14px}
+.card{background:var(--card);border:1px solid var(--bd);border-radius:14px;padding:14px;margin-bottom:14px}
+.card.editing{background:var(--ed);border-color:var(--edb);border-width:2px}
+.editing #save{background:var(--edb);color:#1d2320}
+.row{display:flex;gap:10px;flex-wrap:wrap}.row>*{flex:1;min-width:110px}
+label{display:block;font-size:12px;color:var(--mu);margin-bottom:3px}
+input{width:100%;padding:10px;border:1px solid var(--bd);border-radius:10px;background:var(--bg);color:var(--tx);font:inherit}
+button{font:inherit;border:0;border-radius:10px;padding:10px 14px;background:var(--ac);color:#fff;cursor:pointer}
+button.sec{background:var(--ac2);color:var(--ac)}button.gh{background:none;color:var(--mu);padding:6px 8px}
+.now{padding:4px 8px;font-size:12px;margin-top:4px}
+.nav{display:flex;align-items:center;justify-content:space-between;margin-bottom:12px}
+.nav b{text-transform:capitalize;font-size:17px}
+.stats{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.st{background:var(--ac2);border-radius:12px;padding:10px}.st small{color:var(--mu);display:block;font-size:12px}.st strong{font-size:20px}
+.bar{height:10px;background:var(--ac2);border-radius:6px;overflow:hidden;margin-top:10px}.bar i{display:block;height:100%;background:var(--ac);width:0;transition:width .3s}
+.item{display:flex;justify-content:space-between;align-items:center;padding:10px 0;border-top:1px solid var(--bd)}
+.item:first-child{border-top:0}.item small{color:var(--mu)}.hrs{font-weight:600;white-space:nowrap}
+.cal{display:grid;grid-template-columns:repeat(7,1fr);gap:4px}
+.cal .h{font-size:11px;color:var(--mu);text-align:center;padding-bottom:2px}
+.cd{aspect-ratio:1/1.15;border-radius:8px;border:1px solid var(--bd);padding:3px 2px;font-size:11px;display:flex;flex-direction:column;justify-content:space-between;align-items:center;cursor:pointer;background:var(--bg);min-width:0}
+.cd.on{background:var(--ac2);border-color:var(--ac)}
+.cd.td{outline:2px solid var(--ac);outline-offset:-1px}
+.cd.we .n{color:var(--dg)}
+.cd.x{visibility:hidden;cursor:default}
+.cd b{font-size:11px;color:var(--ac);white-space:nowrap}
+.empty{color:var(--mu);text-align:center;padding:14px}
+details summary{cursor:pointer;color:var(--mu);font-size:14px}
+.msg{font-size:13px;color:var(--ac);min-height:18px;margin-top:6px}
+</style>
+</head>
+<body>
+<main>
+<h1>⏱ Czas pracy</h1>
+
+<div class="card" id="fcard">
+  <div id="edb" style="display:none;font-weight:600;margin-bottom:10px">✏️ Edytujesz wpis</div>
+  <div class="row">
+    <div><label>Data</label><input type="date" id="date"></div>
+  </div>
+  <div class="row" style="margin-top:10px">
+    <div><label>Początek</label><input type="time" id="start" value="08:00"><button class="sec now" onclick="now('start')">Teraz</button></div>
+    <div><label>Koniec</label><input type="time" id="end" value="16:00"><button class="sec now" onclick="now('end')">Teraz</button></div>
+  </div>
+  <div style="margin-top:10px"><label>Notatka (opcjonalnie)</label><input id="note" placeholder="np. projekt, praca zdalna"></div>
+  <div class="row" style="margin-top:12px;align-items:center">
+    <div id="prev" style="color:var(--mu);font-size:14px"></div>
+    <div style="display:flex;gap:8px;flex:0 0 auto"><button class="sec" id="cancel" style="display:none" onclick="resetForm()">Anuluj</button><button id="save" onclick="save()">Dodaj</button></div>
+  </div>
+</div>
+
+<div class="card">
+  <div class="nav"><button class="sec" onclick="mv(-1)">‹</button><b id="mname"></b><button class="sec" onclick="mv(1)">›</button></div>
+  <div class="stats">
+    <div class="st"><small>Razem</small><strong id="s1">0h</strong></div>
+    <div class="st"><small>Dni pracy</small><strong id="s2">0</strong></div>
+    <div class="st"><small>Średnio / dzień</small><strong id="s3">–</strong></div>
+    <div class="st"><small>Zarobek</small><strong id="s4">–</strong></div>
+  </div>
+  <div class="bar"><i id="pb"></i></div>
+  <div id="ptxt" style="font-size:13px;color:var(--mu);margin-top:5px"></div>
+  <details style="margin-top:12px"><summary>Ustawienia</summary>
+    <div class="row" style="margin-top:8px">
+      <div><label>Stawka (zł/h)</label><input type="number" id="rate" min="0" step="0.5" oninput="setS()"></div>
+      <div><label>Cel miesięczny (h)</label><input type="number" id="target" min="0" oninput="setS()"></div>
+    </div>
+    <button class="sec" id="rst" style="margin-top:10px;color:var(--dg)" onclick="resetAll()">Wyzeruj wszystkie dane</button>
+  </details>
+</div>
+
+<div class="card">
+  <div id="list"></div>
+  <div style="display:flex;gap:8px;justify-content:space-between;margin-top:8px">
+    <button class="sec" onclick="copyCsv()">Kopiuj CSV</button><span class="msg" id="msg"></span>
+  </div>
+</div>
+
+<div class="card">
+  <div style="font-weight:600;margin-bottom:10px">Kalendarz miesiąca</div>
+  <div class="cal" id="cal"></div>
+  <div style="font-size:12px;color:var(--mu);margin-top:8px">Dotknij dnia, aby dodać lub edytować wpis.</div>
+</div>
+</main>
+
+<script>
+const K='czas-pracy-v1';
+let D={e:[],s:{rate:'',target:''}},edit=null,cur=new Date();cur.setDate(1);
+try{const r=localStorage.getItem(K);if(r)D=Object.assign(D,JSON.parse(r))}catch(x){}
+const $=id=>document.getElementById(id);
+const persist=()=>{try{localStorage.setItem(K,JSON.stringify(D))}catch(x){}};
+const iso=d=>d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');
+const tm=s=>{const [h,m]=s.split(':').map(Number);return h*60+m};
+const mins=e=>{let d=tm(e.end)-tm(e.start);if(d<0)d+=1440;return d};
+const fmt=m=>{const h=Math.floor(m/60),r=Math.round(m%60);return h+'h'+(r?' '+String(r).padStart(2,'0')+'m':'')};
+const esc=s=>s.replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+function now(f){const d=new Date();$(f).value=String(d.getHours()).padStart(2,'0')+':'+String(d.getMinutes()).padStart(2,'0');upd()}
+function upd(){const s=$('start').value,e=$('end').value;$('prev').textContent=s&&e?'Do zapisu: '+fmt(mins({start:s,end:e})):''}
+['start','end'].forEach(i=>$(i).addEventListener('input',upd));
+$('date').addEventListener('change',()=>{const o=edit&&D.e.find(y=>y.id===edit),x=!(o&&o.date===$('date').value)&&D.e.find(e=>e.date===$('date').value&&e.id!==edit);if(x){ed(x.id,1);$('prev').textContent='Ten dzień ma już wpis, edytujesz go'}});
+function resetForm(){edit=null;$('date').value=iso(new Date());$('note').value='';$('save').textContent='Dodaj';$('fcard').classList.remove('editing');$('edb').style.display='none';$('cancel').style.display='none';upd()}
+function save(){
+  const e={date:$('date').value,start:$('start').value,end:$('end').value,note:$('note').value.trim()};
+  if(!e.date||!e.start||!e.end){$('prev').textContent='Uzupełnij datę i godziny';return}
+  const orig=edit&&D.e.find(x=>x.id===edit),dup=!(orig&&orig.date===e.date)&&D.e.find(x=>x.date===e.date&&x.id!==edit);
+  if(dup){ed(dup.id,1);$('prev').textContent='Ten dzień ma już wpis, więc nie można dodać drugiego. Edytujesz istniejący.';return}
+  if(edit){const i=D.e.findIndex(x=>x.id===edit);D.e[i]=Object.assign({id:edit},e)}else{e.id=Date.now();D.e.push(e)}
+  const d=new Date(e.date+'T00:00');cur=new Date(d.getFullYear(),d.getMonth(),1);
+  persist();resetForm();render()
+}
+function ed(id,ns){const e=D.e.find(x=>x.id===id);edit=id;$('date').value=e.date;$('start').value=e.start;$('end').value=e.end;$('note').value=e.note||'';$('save').textContent='Zapisz zmiany';$('fcard').classList.add('editing');$('edb').style.display='';$('cancel').style.display='';upd();if(!ns)scrollTo({top:0,behavior:'smooth'})}
+let delId=null,delT;function del(id){if(delId!==id){delId=id;clearTimeout(delT);delT=setTimeout(()=>{delId=null;render()},3000);render();return}clearTimeout(delT);delId=null;D.e=D.e.filter(x=>x.id!==id);persist();render()}
+const cf=m=>{const h=Math.floor(m/60),r=Math.round(m%60);return r?h+'h'+String(r).padStart(2,'0'):h+'h'};
+function renderCal(L){
+  const y=cur.getFullYear(),m=cur.getMonth(),n=new Date(y,m+1,0).getDate(),off=(new Date(y,m,1).getDay()+6)%7,t=iso(new Date()),by={};
+  L.forEach(e=>{by[e.date]=(by[e.date]||0)+mins(e)});
+  let h=['Pn','Wt','Śr','Cz','Pt','Sb','Nd'].map(d=>`<div class="h">${d}</div>`).join('')+'<div class="cd x"></div>'.repeat(off);
+  for(let d=1;d<=n;d++){const k=y+'-'+String(m+1).padStart(2,'0')+'-'+String(d).padStart(2,'0'),wd=(off+d-1)%7,v=by[k];
+    h+=`<div class="cd${v!=null?' on':''}${k===t?' td':''}${wd>4?' we':''}" onclick="pick('${k}')"><span class="n">${d}</span><b>${v!=null?cf(v):''}</b></div>`}
+  $('cal').innerHTML=h
+}
+function pick(k){const e=D.e.find(x=>x.date===k);if(e)ed(e.id);else{resetForm();$('date').value=k;scrollTo({top:0,behavior:'smooth'})}}
+let rstT;function resetAll(){const b=$('rst');if(b.dataset.arm!=='1'){b.dataset.arm='1';b.textContent='Na pewno? Kliknij ponownie';clearTimeout(rstT);rstT=setTimeout(()=>{b.dataset.arm='';b.textContent='Wyzeruj wszystkie dane'},4000);return}clearTimeout(rstT);b.dataset.arm='';b.textContent='Wyzeruj wszystkie dane';{D={e:[],s:{rate:'',target:''}};try{localStorage.removeItem(K)}catch(x){}$('rate').value='';$('target').value='';resetForm();render()}}
+function mv(n){cur=new Date(cur.getFullYear(),cur.getMonth()+n,1);render()}
+function setS(){D.s={rate:$('rate').value,target:$('target').value};persist();render()}
+function monthEntries(){const p=cur.getFullYear()+'-'+String(cur.getMonth()+1).padStart(2,'0');return D.e.filter(e=>e.date.startsWith(p)).sort((a,b)=>b.date.localeCompare(a.date)||b.start.localeCompare(a.start))}
+function render(){
+  $('mname').textContent=cur.toLocaleDateString('pl-PL',{month:'long',year:'numeric'});
+  const L=monthEntries(),tot=L.reduce((a,e)=>a+mins(e),0),days=new Set(L.map(e=>e.date)).size;
+  $('s1').textContent=fmt(tot);$('s2').textContent=days;
+  $('s3').textContent=days?fmt(tot/days):'–';
+  const r=parseFloat(D.s.rate),t=parseFloat(D.s.target);
+  $('s4').textContent=r>0?(tot/60*r).toLocaleString('pl-PL',{maximumFractionDigits:2})+' zł':'–';
+  if(t>0){$('pb').style.width=Math.min(100,tot/60/t*100)+'%';const left=t*60-tot;$('ptxt').textContent=left>0?'Do celu '+t+'h brakuje '+fmt(left):'Cel osiągnięty! Nadgodziny: '+fmt(-left)}
+  else{$('pb').style.width='0';$('ptxt').textContent='Ustaw cel miesięczny w ustawieniach'}
+  $('list').innerHTML=L.length?L.map(e=>{const d=new Date(e.date+'T00:00').toLocaleDateString('pl-PL',{weekday:'short',day:'numeric',month:'short'});
+    return `<div class="item"><div><b>${d}</b><br><small>${e.start}–${e.end}${e.note?' · '+esc(e.note):''}</small></div><div style="text-align:right"><div class="hrs">${fmt(mins(e))}</div><button class="gh" onclick="ed(${e.id})">Edytuj</button><button class="gh" style="color:var(--dg)" onclick="del(${e.id})">${delId===e.id?'Na pewno?':'Usuń'}</button></div></div>`}).join(''):'<div class="empty">Brak wpisów w tym miesiącu</div>';
+  renderCal(L)
+}
+function copyCsv(){
+  const L=monthEntries().reverse(),csv='Data;Początek;Koniec;Godziny;Notatka\n'+L.map(e=>[e.date,e.start,e.end,(mins(e)/60).toFixed(2).replace('.',','),'"'+(e.note||'').replace(/"/g,'""')+'"'].join(';')).join('\n');
+  const ok=()=>{$('msg').textContent='Skopiowano do schowka';setTimeout(()=>$('msg').textContent='',2500)};
+  try{navigator.clipboard.writeText(csv).then(ok,()=>$('msg').textContent='Nie udało się skopiować')}catch(x){$('msg').textContent='Nie udało się skopiować'}
+}
+$('rate').value=D.s.rate;$('target').value=D.s.target;resetForm();render();
+</script>
+</body>
+</html>
